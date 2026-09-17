@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Flask 기반 스마트 할일 관리 웹 애플리케이션">
+    <title>TaskFlow | 스마트 할일 관리</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-background">
+        <div class="glow-sphere sphere-1"></div>
+        <div class="glow-sphere sphere-2"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="app-title">TaskFlow</h1>
+                    <p class="app-subtitle" id="current-date-text">오늘의 계획을 스마트하게 관리하세요</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="btn-open-modal" class="btn-primary" onclick="openTodoModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    새 할일 추가
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Overview Cards -->
+        <section class="stats-grid" aria-label="할일 통계">
+            <div class="stat-card">
+                <div class="stat-icon total-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">전체 할일</span>
+                    <span class="stat-value" id="stat-total">0</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon active-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">진행중</span>
+                    <span class="stat-value" id="stat-active">0</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon completed-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">완료됨</span>
+                    <span class="stat-value" id="stat-completed">0</span>
+                </div>
+            </div>
+
+            <div class="stat-card progress-card">
+                <div class="progress-header">
+                    <span class="stat-label">달성률</span>
+                    <span class="progress-percentage" id="stat-rate">0%</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Add Bar -->
+        <section class="quick-add-section">
+            <form id="quick-add-form" onsubmit="handleQuickAdd(event)">
+                <input type="text" id="quick-add-input" placeholder="새로운 할일을 빠르게 입력하세요 (Enter로 등록)..." autocomplete="off" required>
+                <select id="quick-add-priority" title="우선순위 선택">
+                    <option value="medium" selected>보통 우선순위</option>
+                    <option value="high">🔴 높은 우선순위</option>
+                    <option value="low">🟢 낮은 우선순위</option>
+                </select>
+                <button type="submit" id="quick-add-btn" class="btn-accent">등록</button>
+            </form>
+        </section>
+
+        <!-- Control Bar (Filter & Search) -->
+        <section class="controls-card">
+            <div class="search-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="search-input" placeholder="할일 검색..." oninput="handleSearch()">
+            </div>
+
+            <div class="filters-group">
+                <!-- Status Filter Pills -->
+                <div class="pill-group" role="tablist">
+                    <button class="pill-btn active" data-status="all" onclick="filterByStatus('all', this)">전체</button>
+                    <button class="pill-btn" data-status="active" onclick="filterByStatus('active', this)">진행중</button>
+                    <button class="pill-btn" data-status="completed" onclick="filterByStatus('completed', this)">완료됨</button>
+                </div>
+
+                <!-- Priority Dropdown Filter -->
+                <select id="filter-priority" onchange="applyFilters()" class="select-filter">
+                    <option value="all">모든 우선순위</option>
+                    <option value="high">높음 🔥</option>
+                    <option value="medium">보통 ⚡</option>
+                    <option value="low">낮음 ☕</option>
+                </select>
+
+                <!-- Category Dropdown Filter -->
+                <select id="filter-category" onchange="applyFilters()" class="select-filter">
+                    <option value="all">모든 카테고리</option>
+                    <option value="일반">일반</option>
+                    <option value="업무">업무</option>
+                    <option value="개인">개인</option>
+                    <option value="학습">학습</option>
+                </select>
+
+                <button id="btn-clear-completed" class="btn-outline-danger" onclick="clearCompletedTodos()" title="완료된 할일 일괄 삭제">
+                    완료 항목 삭제
+                </button>
+            </div>
+        </section>
+
+        <!-- Todo List Area -->
+        <main class="todo-list-container">
+            <div id="todo-list" class="todo-list">
+                <!-- Javascript will dynamically populate cards here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-illustration">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                </div>
+                <h3>등록된 할일이 없습니다</h3>
+                <p>새로운 할일을 등록하고 하루의 생산성을 높여보세요!</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Todo Modal -->
+    <div id="todo-modal" class="modal-overlay hidden" onclick="handleModalBackdropClick(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">새 할일 추가</h2>
+                <button class="modal-close-btn" onclick="closeTodoModal()" aria-label="닫기">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="todo-form" onsubmit="handleModalSubmit(event)">
+                <input type="hidden" id="modal-todo-id" value="">
+                
+                <div class="form-group">
+                    <label for="modal-input-title">제목 *</label>
+                    <input type="text" id="modal-input-title" placeholder="무엇을 완료해야 하나요?" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal-input-desc">상세 설명</label>
+                    <textarea id="modal-input-desc" rows="3" placeholder="상세 내용이나 메모를 입력하세요"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="modal-input-priority">우선순위</label>
+                        <select id="modal-input-priority">
+                            <option value="low">낮음 (Low)</option>
+                            <option value="medium" selected>보통 (Medium)</option>
+                            <option value="high">높음 (High)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group flex-1">
+                        <label for="modal-input-category">카테고리</label>
+                        <input type="text" id="modal-input-category" list="category-suggestions" placeholder="직접 입력 또는 선택" value="일반">
+                        <datalist id="category-suggestions">
+                            <option value="일반">
+                            <option value="업무">
+                            <option value="개인">
+                            <option value="학습">
+                            <option value="운동">
+                        </datalist>
+                    </div>
+
+                    <div class="form-group flex-1">
+                        <label for="modal-input-due">마감일</label>
+                        <input type="date" id="modal-input-due">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeTodoModal()">취소</button>
+                    <button type="submit" class="btn-primary" id="modal-submit-btn">저장하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
