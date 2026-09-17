@@ -11,9 +11,32 @@ let searchDebounceTimer = null;
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
     initDateHeader();
+    loadDbStatus();
     loadTodos();
     loadStats();
 });
+
+// Load and display database connection status
+async function loadDbStatus() {
+    const badge = document.getElementById('db-badge');
+    const nameElem = document.getElementById('db-name');
+    if (!badge || !nameElem) return;
+
+    try {
+        const res = await fetch('/api/db-status');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.is_supabase) {
+            badge.classList.add('supabase');
+            nameElem.textContent = 'Supabase 연결됨';
+        } else {
+            badge.classList.remove('supabase');
+            nameElem.textContent = 'SQLite (로컬)';
+        }
+    } catch (e) {
+        nameElem.textContent = 'DB 상태 확인 불가';
+    }
+}
 
 // Format and set current date in header
 function initDateHeader() {
