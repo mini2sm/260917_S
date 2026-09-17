@@ -4,7 +4,8 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'todos.db')
+DB_DIR = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(DB_DIR, 'todos.db')
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
