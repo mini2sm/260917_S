@@ -3,6 +3,12 @@ import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 app = Flask(__name__)
 
 # -------------------------------------------------------------
